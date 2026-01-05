@@ -161,8 +161,6 @@ def status(watch: bool):
         summary.append(f"Failed: {status_data['failed']} ", style="red")
         summary.append(f"Stale: {status_data['stale']}", style="yellow")
 
-        panel = Panel(summary, title="Agent Status", border_style="blue")
-
         # Agents table
         table = Table()
         table.add_column("ID", style="cyan", width=10)
