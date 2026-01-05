@@ -1,15 +1,13 @@
 """FastAPI web server for the dashboard."""
 
 import asyncio
-from pathlib import Path
 from typing import List, Optional
 
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
-from fastapi.staticfiles import StaticFiles
 from fastapi.responses import HTMLResponse
 from pydantic import BaseModel
 
-from ..core import Orchestrator, StateManager
+from ..core import Orchestrator
 
 app = FastAPI(title="Claude Orchestra Dashboard")
 
@@ -19,6 +17,7 @@ orchestrator = Orchestrator()
 
 class SpawnRequest(BaseModel):
     """Request to spawn agents."""
+
     tasks: List[str]
     parallel: Optional[int] = 3
     use_worktrees: Optional[bool] = True
@@ -26,6 +25,7 @@ class SpawnRequest(BaseModel):
 
 class AgentAction(BaseModel):
     """Request to act on an agent."""
+
     agent_id: str
 
 
@@ -43,6 +43,7 @@ async def get_status():
 async def get_sessions(hours: float = 4.0):
     """Get recent sessions."""
     from ..core import SessionManager
+
     manager = SessionManager()
     sessions = manager.find_recent(hours=hours)
     return [
@@ -61,6 +62,7 @@ async def get_sessions(hours: float = 4.0):
 async def get_worktrees():
     """Get active worktrees."""
     from ..core import WorktreeManager
+
     manager = WorktreeManager()
     worktrees = manager.list_active()
     return [

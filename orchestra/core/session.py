@@ -1,12 +1,11 @@
 """Session discovery and management for Claude Code sessions."""
 
 import json
-import os
 import subprocess
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 from pathlib import Path
-from typing import AsyncIterator, List, Optional
+from typing import List, Optional
 
 from ..config import get_config
 
@@ -130,7 +129,7 @@ class SessionManager:
                 message_count=message_count,
                 last_prompt=last_prompt,
             )
-        except Exception as e:
+        except Exception:
             return None
 
     def get_session(self, session_id: str) -> Optional[Session]:

@@ -1,7 +1,6 @@
 """Configuration management for Claude Orchestra."""
 
 import json
-import os
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import List, Optional
@@ -12,9 +11,7 @@ class OrchestraConfig:
     """Configuration for Claude Orchestra."""
 
     # Session discovery
-    claude_projects_dir: Path = field(
-        default_factory=lambda: Path.home() / ".claude" / "projects"
-    )
+    claude_projects_dir: Path = field(default_factory=lambda: Path.home() / ".claude" / "projects")
 
     # Worktree settings
     worktree_dir: str = ".worktrees"
@@ -60,8 +57,12 @@ class OrchestraConfig:
         if config_path.exists():
             with open(config_path) as f:
                 data = json.load(f)
-            return cls(**{k: Path(v) if k.endswith("_dir") or k == "state_file" else v
-                         for k, v in data.items()})
+            return cls(
+                **{
+                    k: Path(v) if k.endswith("_dir") or k == "state_file" else v
+                    for k, v in data.items()
+                }
+            )
         return cls()
 
     def save(self, config_path: Optional[Path] = None) -> None:

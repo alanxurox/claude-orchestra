@@ -6,7 +6,7 @@ from pathlib import Path
 
 import pytest
 
-from orchestra.core.worktree import Worktree, WorktreeManager
+from orchestra.core.worktree import WorktreeManager
 
 
 @pytest.fixture

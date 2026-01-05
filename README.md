@@ -1,5 +1,9 @@
 # Claude Orchestra
 
+[![PyPI version](https://badge.fury.io/py/claude-orchestra.svg)](https://badge.fury.io/py/claude-orchestra)
+[![Tests](https://github.com/alanxurox/claude-orchestra/actions/workflows/tests.yml/badge.svg)](https://github.com/alanxurox/claude-orchestra/actions/workflows/tests.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+
 Multi-agent orchestration for Claude Code with git worktree isolation.
 
 ## Features
@@ -19,7 +23,7 @@ pip install claude-orchestra
 Or install from source:
 
 ```bash
-git clone https://github.com/morningguard/claude-orchestra
+git clone https://github.com/alanxurox/claude-orchestra
 cd claude-orchestra
 pip install -e ".[dev]"
 ```

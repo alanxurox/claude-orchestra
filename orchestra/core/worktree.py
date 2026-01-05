@@ -80,7 +80,7 @@ class WorktreeManager:
                 text=True,
                 check=True,
             )
-        except subprocess.CalledProcessError as e:
+        except subprocess.CalledProcessError:
             # Branch might already exist, try without -b
             subprocess.run(
                 ["git", "worktree", "add", str(worktree_path), branch_name],

@@ -44,9 +44,9 @@ dev = [
 orchestra = "orchestra.cli:main"
 
 [project.urls]
-Homepage = "https://github.com/morningguard/claude-orchestra"
-Repository = "https://github.com/morningguard/claude-orchestra"
-Issues = "https://github.com/morningguard/claude-orchestra/issues"
+Homepage = "https://github.com/alanxurox/claude-orchestra"
+Repository = "https://github.com/alanxurox/claude-orchestra"
+Issues = "https://github.com/alanxurox/claude-orchestra/issues"
 
 [tool.hatch.build.targets.wheel]
 packages = ["orchestra"]

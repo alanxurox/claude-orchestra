@@ -50,8 +50,14 @@ class AgentState:
             worktree_path=data.get("worktree_path"),
             task=data["task"],
             status=data["status"],
-            started_at=datetime.fromisoformat(data["started_at"]) if data.get("started_at") else None,
-            last_heartbeat=datetime.fromisoformat(data["last_heartbeat"]) if data.get("last_heartbeat") else None,
+            started_at=(
+                datetime.fromisoformat(data["started_at"]) if data.get("started_at") else None
+            ),
+            last_heartbeat=(
+                datetime.fromisoformat(data["last_heartbeat"])
+                if data.get("last_heartbeat")
+                else None
+            ),
             progress=data.get("progress", 0.0),
             current_activity=data.get("current_activity"),
             error_message=data.get("error_message"),
@@ -77,7 +83,9 @@ class OrchestratorState:
     def from_dict(cls, data: dict) -> "OrchestratorState":
         """Create from dictionary."""
         agents = {k: AgentState.from_dict(v) for k, v in data.get("agents", {}).items()}
-        last_updated = datetime.fromisoformat(data["last_updated"]) if data.get("last_updated") else None
+        last_updated = (
+            datetime.fromisoformat(data["last_updated"]) if data.get("last_updated") else None
+        )
         return cls(agents=agents, last_updated=last_updated)
 
 

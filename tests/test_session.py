@@ -24,19 +24,21 @@ def temp_projects_dir():
         # Recent session
         recent_session = project_dir / "session-recent.jsonl"
         recent_session.write_text(
-            json.dumps({"type": "init", "cwd": "/test/project"}) + "\n"
-            + json.dumps({"role": "user", "content": "Hello"}) + "\n"
-            + json.dumps({"role": "assistant", "content": "Hi!"}) + "\n"
+            json.dumps({"type": "init", "cwd": "/test/project"})
+            + "\n"
+            + json.dumps({"role": "user", "content": "Hello"})
+            + "\n"
+            + json.dumps({"role": "assistant", "content": "Hi!"})
+            + "\n"
         )
 
         # Old session (modified to be old)
         old_session = project_dir / "session-old.jsonl"
-        old_session.write_text(
-            json.dumps({"type": "init", "cwd": "/test/old"}) + "\n"
-        )
+        old_session.write_text(json.dumps({"type": "init", "cwd": "/test/old"}) + "\n")
         # Set modification time to 1 week ago
         old_time = datetime.now() - timedelta(days=7)
         import os
+
         os.utime(old_session, (old_time.timestamp(), old_time.timestamp()))
 
         yield projects_dir

@@ -3,17 +3,17 @@
 import asyncio
 import sys
 from pathlib import Path
-from typing import List, Optional
+from typing import List
 
 import click
 from rich.console import Console
-from rich.table import Table
 from rich.live import Live
 from rich.panel import Panel
+from rich.table import Table
 from rich.text import Text
 
-from .config import OrchestraConfig, get_config, set_config
-from .core import SessionManager, WorktreeManager, Orchestrator, StateManager
+from .config import OrchestraConfig
+from .core import Orchestrator, SessionManager, WorktreeManager
 
 console = Console()
 
@@ -32,7 +32,9 @@ def init(force: bool):
     config_path = Path.cwd() / ".orchestra" / "config.json"
 
     if config_path.exists() and not force:
-        console.print("[yellow]Orchestra already initialized. Use --force to reinitialize.[/yellow]")
+        console.print(
+            "[yellow]Orchestra already initialized. Use --force to reinitialize.[/yellow]"
+        )
         return
 
     config = OrchestraConfig()
@@ -70,6 +72,7 @@ def sessions(hours: float, as_json: bool):
 
     if as_json:
         import json
+
         data = [
             {
                 "session_id": s.session_id,
@@ -139,7 +142,7 @@ def spawn(tasks: List[str], parallel: int, no_worktree: bool):
         table.add_row(handle.agent_id, handle.task[:50], worktree)
 
     console.print(table)
-    console.print(f"\n[green]Run 'orchestra status' to monitor progress[/green]")
+    console.print("\n[green]Run 'orchestra status' to monitor progress[/green]")
 
 
 @main.command()
@@ -180,6 +183,7 @@ def status(watch: bool):
             heartbeat = ""
             if agent.get("last_heartbeat"):
                 from datetime import datetime
+
                 hb = datetime.fromisoformat(agent["last_heartbeat"])
                 heartbeat = hb.strftime("%H:%M:%S")
 
@@ -203,6 +207,7 @@ def status(watch: bool):
                 while True:
                     live.update(render_status())
                     import time
+
                     time.sleep(1)
             except KeyboardInterrupt:
                 pass
@@ -290,6 +295,7 @@ def web(port: int, host: str):
 
     try:
         import uvicorn
+
         from .dashboard.server import app
 
         uvicorn.run(app, host=host, port=port, log_level="warning")
