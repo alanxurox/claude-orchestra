@@ -4,15 +4,15 @@ build-backend = "hatchling.build"
 
 [project]
 name = "claude-orchestra"
-version = "0.1.0"
-description = "Multi-agent orchestration for Claude Code with git worktree isolation"
+version = "0.2.0a1"
+description = "The lightweight Claude orchestrator - session discovery, parallel agents, zero setup"
 readme = "README.md"
 license = "MIT"
 requires-python = ">=3.10"
 authors = [
     { name = "MorningGuard Team" }
 ]
-keywords = ["claude", "ai", "agents", "orchestration", "git", "worktree"]
+keywords = ["claude", "ai", "agents", "orchestration", "git", "worktree", "session", "claude-code", "lightweight"]
 classifiers = [
     "Development Status :: 3 - Alpha",
     "Intended Audience :: Developers",

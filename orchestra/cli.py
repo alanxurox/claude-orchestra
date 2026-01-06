@@ -386,6 +386,185 @@ def analytics(hours: float, as_json: bool):
     console.print(projects_table)
 
 
+def _format_bytes(size_bytes: int) -> str:
+    """Format bytes as human-readable string."""
+    if size_bytes < 1024:
+        return f"{size_bytes} B"
+    elif size_bytes < 1024 * 1024:
+        return f"{size_bytes / 1024:.1f} KB"
+    elif size_bytes < 1024 * 1024 * 1024:
+        return f"{size_bytes / (1024 * 1024):.1f} MB"
+    else:
+        return f"{size_bytes / (1024 * 1024 * 1024):.2f} GB"
+
+
+@main.command()
+@click.option("--hours", default=168.0, help="Hours to look back (default: 168 = 1 week)")
+@click.option("--json", "as_json", is_flag=True, help="Output as JSON")
+def health(hours: float, as_json: bool):
+    """Check health of Claude sessions and storage.
+
+    Shows storage usage, active vs stale sessions, and identifies
+    sessions that could be cleaned up.
+
+    Examples:
+
+        orchestra health
+
+        orchestra health --hours 720
+
+        orchestra health --json
+    """
+    manager = SessionManager()
+    report = manager.check_health(hours=hours)
+
+    if as_json:
+        import json
+
+        # Convert datetimes to ISO format for JSON
+        def serialize(obj):
+            if hasattr(obj, "isoformat"):
+                return obj.isoformat()
+            return obj
+
+        json_report = {
+            "storage_bytes": report["storage_bytes"],
+            "storage_human": _format_bytes(report["storage_bytes"]),
+            "session_count": report["session_count"],
+            "active_sessions": report["active_sessions"],
+            "stale_session_count": len(report["stale_sessions"]),
+            "orphaned_session_count": len(report["orphaned_sessions"]),
+            "large_session_count": len(report["largest_sessions"]),
+            "stale_sessions": [
+                {
+                    "session_id": s["session_id"],
+                    "project_path": s["project_path"],
+                    "modified_at": serialize(s["modified_at"]),
+                    "message_count": s["message_count"],
+                    "file_size": s["file_size"],
+                }
+                for s in report["stale_sessions"]
+            ],
+            "orphaned_sessions": [
+                {
+                    "session_id": s["session_id"],
+                    "project_path": s["project_path"],
+                    "modified_at": serialize(s["modified_at"]),
+                    "message_count": s["message_count"],
+                    "file_size": s["file_size"],
+                }
+                for s in report["orphaned_sessions"]
+            ],
+            "largest_sessions": [
+                {
+                    "session_id": s["session_id"],
+                    "project_path": s["project_path"],
+                    "modified_at": serialize(s["modified_at"]),
+                    "message_count": s["message_count"],
+                    "file_size": s["file_size"],
+                }
+                for s in report["largest_sessions"]
+            ],
+            "oldest_sessions": [
+                {
+                    "session_id": s["session_id"],
+                    "project_path": s["project_path"],
+                    "modified_at": serialize(s["modified_at"]),
+                    "message_count": s["message_count"],
+                    "file_size": s["file_size"],
+                }
+                for s in report["oldest_sessions"]
+            ],
+        }
+        console.print_json(json.dumps(json_report))
+        return
+
+    # Summary section
+    stale_count = len(report["stale_sessions"])
+    summary_table = Table(title=f"Session Health Report (last {hours}h)", box=None)
+    summary_table.add_column("Metric", style="cyan")
+    summary_table.add_column("Value", style="green", justify="right")
+
+    summary_table.add_row("Total Storage", _format_bytes(report["storage_bytes"]))
+    summary_table.add_row("Total Sessions", str(report["session_count"]))
+    summary_table.add_row("Active Sessions", str(report["active_sessions"]))
+    summary_table.add_row("Stale Sessions (>48h)", str(stale_count))
+    summary_table.add_row("Orphaned Sessions", str(len(report["orphaned_sessions"])))
+    summary_table.add_row("Large Sessions (>1000 msgs)", str(len(report["largest_sessions"])))
+
+    console.print(summary_table)
+
+    # Large sessions warning
+    if report["largest_sessions"]:
+        console.print()
+        large_table = Table(title="Large Sessions (>1000 messages)")
+        large_table.add_column("Session ID", style="cyan")
+        large_table.add_column("Project", style="blue")
+        large_table.add_column("Messages", justify="right", style="yellow")
+        large_table.add_column("Size", justify="right")
+        large_table.add_column("Modified", style="dim")
+
+        for s in report["largest_sessions"]:
+            project = Path(s["project_path"]).name if s["project_path"] else "unknown"
+            modified = s["modified_at"].strftime("%Y-%m-%d %H:%M")
+            large_table.add_row(
+                s["session_id"][:12] + "...",
+                project,
+                str(s["message_count"]),
+                _format_bytes(s["file_size"]),
+                modified,
+            )
+
+        console.print(large_table)
+
+    # Orphaned sessions
+    if report["orphaned_sessions"]:
+        console.print()
+        orphan_table = Table(title="Orphaned Sessions (project no longer exists)")
+        orphan_table.add_column("Session ID", style="cyan")
+        orphan_table.add_column("Original Project", style="red")
+        orphan_table.add_column("Messages", justify="right")
+        orphan_table.add_column("Size", justify="right")
+
+        for s in report["orphaned_sessions"]:
+            orphan_table.add_row(
+                s["session_id"][:12] + "...",
+                s["project_path"] or "unknown",
+                str(s["message_count"]),
+                _format_bytes(s["file_size"]),
+            )
+
+        console.print(orphan_table)
+
+    # Oldest sessions that could be cleaned up
+    if report["oldest_sessions"]:
+        console.print()
+        oldest_table = Table(title="Oldest Sessions (cleanup candidates)")
+        oldest_table.add_column("Session ID", style="cyan")
+        oldest_table.add_column("Project", style="blue")
+        oldest_table.add_column("Messages", justify="right")
+        oldest_table.add_column("Size", justify="right")
+        oldest_table.add_column("Modified", style="dim")
+
+        for s in report["oldest_sessions"]:
+            project = Path(s["project_path"]).name if s["project_path"] else "unknown"
+            modified = s["modified_at"].strftime("%Y-%m-%d %H:%M")
+            oldest_table.add_row(
+                s["session_id"][:12] + "...",
+                project,
+                str(s["message_count"]),
+                _format_bytes(s["file_size"]),
+                modified,
+            )
+
+        console.print(oldest_table)
+
+    # Summary tips
+    if stale_count > 0 or report["orphaned_sessions"]:
+        console.print()
+        console.print("[dim]Tip: Stale and orphaned sessions can be safely deleted from ~/.claude/projects/[/dim]")
+
+
 @main.command()
 @click.argument("query")
 @click.option("--hours", default=168, help="Hours to look back (default: 168 = 1 week)")

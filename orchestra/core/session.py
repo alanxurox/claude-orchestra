@@ -440,3 +440,134 @@ class SessionManager:
             return "\n".join(parts)
 
         return str(content)
+
+    def check_health(self, hours: float = 168.0) -> dict:
+        """Check health of sessions.
+
+        Args:
+            hours: Number of hours to look back for analysis.
+
+        Returns:
+            Dict with health report: storage_bytes, session_count,
+            stale_sessions, orphaned_sessions, largest_sessions
+        """
+        if not self.projects_dir.exists():
+            return {
+                "storage_bytes": 0,
+                "session_count": 0,
+                "active_sessions": 0,
+                "stale_sessions": [],
+                "orphaned_sessions": [],
+                "largest_sessions": [],
+                "oldest_sessions": [],
+            }
+
+        now = datetime.now()
+        cutoff = now - timedelta(hours=hours)
+        stale_cutoff = now - timedelta(hours=48)  # Stale = no update in 48h
+
+        total_bytes = 0
+        all_sessions = []
+
+        # Scan all project directories
+        for project_dir in self.projects_dir.iterdir():
+            if not project_dir.is_dir():
+                continue
+
+            project_hash = project_dir.name
+
+            # Find all JSONL session files
+            for session_file in project_dir.glob("*.jsonl"):
+                try:
+                    stat = session_file.stat()
+                    file_size = stat.st_size
+                    modified_at = datetime.fromtimestamp(stat.st_mtime)
+
+                    # Only include sessions within the lookback period
+                    if modified_at < cutoff:
+                        continue
+
+                    total_bytes += file_size
+
+                    # Parse session for metadata
+                    session = self._parse_session(session_file, project_hash, modified_at)
+                    if session:
+                        all_sessions.append({
+                            "session": session,
+                            "file_size": file_size,
+                            "is_stale": modified_at < stale_cutoff,
+                        })
+                except Exception:
+                    continue
+
+        # Calculate counts
+        session_count = len(all_sessions)
+        active_count = sum(1 for s in all_sessions if not s["is_stale"])
+
+        # Find stale sessions (no update in 48h)
+        stale_sessions = [
+            {
+                "session_id": s["session"].session_id,
+                "project_path": s["session"].project_path,
+                "modified_at": s["session"].modified_at,
+                "message_count": s["session"].message_count,
+                "file_size": s["file_size"],
+            }
+            for s in all_sessions
+            if s["is_stale"]
+        ]
+        # Sort by modified_at (oldest first)
+        stale_sessions.sort(key=lambda x: x["modified_at"])
+
+        # Find orphaned sessions (project path no longer exists)
+        orphaned_sessions = []
+        for s in all_sessions:
+            session = s["session"]
+            if session.project_path and not Path(session.project_path).exists():
+                orphaned_sessions.append({
+                    "session_id": session.session_id,
+                    "project_path": session.project_path,
+                    "modified_at": session.modified_at,
+                    "message_count": session.message_count,
+                    "file_size": s["file_size"],
+                })
+
+        # Find unusually large sessions (>1000 messages)
+        large_sessions = [
+            {
+                "session_id": s["session"].session_id,
+                "project_path": s["session"].project_path,
+                "modified_at": s["session"].modified_at,
+                "message_count": s["session"].message_count,
+                "file_size": s["file_size"],
+            }
+            for s in all_sessions
+            if s["session"].message_count > 1000
+        ]
+        # Sort by message count (largest first)
+        large_sessions.sort(key=lambda x: -x["message_count"])
+
+        # Find oldest sessions that could be cleaned up
+        oldest_sessions = sorted(
+            [
+                {
+                    "session_id": s["session"].session_id,
+                    "project_path": s["session"].project_path,
+                    "modified_at": s["session"].modified_at,
+                    "message_count": s["session"].message_count,
+                    "file_size": s["file_size"],
+                }
+                for s in all_sessions
+            ],
+            key=lambda x: x["modified_at"],
+        )[:10]  # Top 10 oldest
+
+        return {
+            "storage_bytes": total_bytes,
+            "session_count": session_count,
+            "active_sessions": active_count,
+            "stale_sessions": stale_sessions,
+            "orphaned_sessions": orphaned_sessions,
+            "largest_sessions": large_sessions[:10],  # Top 10 largest
+            "oldest_sessions": oldest_sessions,
+        }

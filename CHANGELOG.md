@@ -5,6 +5,24 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.0-alpha] - 2025-01-06
+
+### Added
+- New CLI commands: `analytics`, `search`, `export`
+- Session discovery improvements
+- Dashboard: Recent sessions UI with resume buttons
+- v0.2 roadmap documentation
+
+### Changed
+- Strategic repositioning as "the lightweight Claude orchestrator"
+- Updated README with honest competitive positioning
+- Updated STORY.md with accurate market positioning
+
+### Technical
+- `SessionManager.search()` for full-text session search
+- `SessionManager.export_to_markdown()` for session export
+- Mobile-first dashboard improvements
+
 ## [0.1.0] - 2025-01-05
 
 ### Added
