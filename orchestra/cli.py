@@ -284,6 +284,181 @@ def worktrees():
 
 
 @main.command()
+@click.option("--hours", default=24.0, help="Hours to look back (default 24)")
+@click.option("--json", "as_json", is_flag=True, help="Output as JSON")
+def analytics(hours: float, as_json: bool):
+    """Show session analytics and insights."""
+    from collections import defaultdict
+
+    manager = SessionManager()
+    sessions = manager.find_recent(hours=hours)
+
+    # Calculate analytics
+    total_sessions = len(sessions)
+    total_messages = sum(s.message_count for s in sessions)
+    avg_messages = total_messages / total_sessions if total_sessions > 0 else 0
+
+    # Group sessions by project
+    projects = defaultdict(list)
+    for session in sessions:
+        project_name = Path(session.project_path).name if session.project_path else "unknown"
+        projects[project_name].append(session)
+
+    # Find most active project
+    most_active_project = None
+    most_active_count = 0
+    for project_name, project_sessions in projects.items():
+        if len(project_sessions) > most_active_count:
+            most_active_count = len(project_sessions)
+            most_active_project = project_name
+
+    if as_json:
+        import json
+
+        data = {
+            "period_hours": hours,
+            "total_sessions": total_sessions,
+            "total_messages": total_messages,
+            "avg_messages_per_session": round(avg_messages, 2),
+            "most_active_project": {
+                "name": most_active_project,
+                "session_count": most_active_count,
+            } if most_active_project else None,
+            "projects": {
+                name: {
+                    "session_count": len(sess_list),
+                    "total_messages": sum(s.message_count for s in sess_list),
+                    "sessions": [
+                        {
+                            "session_id": s.session_id,
+                            "message_count": s.message_count,
+                            "modified_at": s.modified_at.isoformat(),
+                        }
+                        for s in sess_list
+                    ],
+                }
+                for name, sess_list in projects.items()
+            },
+        }
+        console.print_json(json.dumps(data))
+        return
+
+    if not sessions:
+        console.print(f"[yellow]No sessions found in the last {hours} hours[/yellow]")
+        return
+
+    # Summary table
+    summary_table = Table(title=f"Session Analytics (last {hours}h)", box=None)
+    summary_table.add_column("Metric", style="cyan")
+    summary_table.add_column("Value", style="green", justify="right")
+
+    summary_table.add_row("Total Sessions", str(total_sessions))
+    summary_table.add_row("Total Messages", str(total_messages))
+    summary_table.add_row("Avg Messages/Session", f"{avg_messages:.1f}")
+    if most_active_project:
+        summary_table.add_row("Most Active Project", f"{most_active_project} ({most_active_count} sessions)")
+
+    console.print(summary_table)
+    console.print()
+
+    # Projects breakdown table
+    projects_table = Table(title="Sessions by Project")
+    projects_table.add_column("Project", style="blue")
+    projects_table.add_column("Sessions", justify="right")
+    projects_table.add_column("Messages", justify="right")
+    projects_table.add_column("Avg Msgs", justify="right", style="dim")
+
+    # Sort projects by session count (descending)
+    sorted_projects = sorted(projects.items(), key=lambda x: len(x[1]), reverse=True)
+
+    for project_name, project_sessions in sorted_projects:
+        session_count = len(project_sessions)
+        message_count = sum(s.message_count for s in project_sessions)
+        avg_msgs = message_count / session_count if session_count > 0 else 0
+
+        projects_table.add_row(
+            project_name,
+            str(session_count),
+            str(message_count),
+            f"{avg_msgs:.1f}",
+        )
+
+    console.print(projects_table)
+
+
+@main.command()
+@click.argument("query")
+@click.option("--hours", default=168, help="Hours to look back (default: 168 = 1 week)")
+@click.option("--json", "as_json", is_flag=True, help="Output as JSON")
+def search(query: str, hours: int, as_json: bool):
+    """Search sessions for matching prompts.
+
+    Find sessions where user prompts contain the search term.
+    Perfect for finding "that conversation from last week about auth".
+
+    Examples:
+
+        orchestra search "authentication"
+
+        orchestra search "bug fix" --hours 48
+
+        orchestra search "refactor" --json
+    """
+    manager = SessionManager()
+    results = manager.search(query=query, hours=float(hours))
+
+    if as_json:
+        import json
+
+        data = [
+            {
+                "session_id": r["session_id"],
+                "project_path": r["project_path"],
+                "modified_at": r["modified_at"].isoformat(),
+                "match_count": r["match_count"],
+                "sample_prompt": r["sample_prompt"],
+            }
+            for r in results
+        ]
+        console.print_json(json.dumps(data))
+        return
+
+    if not results:
+        console.print(
+            f"[yellow]No sessions found matching '{query}' in the last {hours} hours[/yellow]"
+        )
+        return
+
+    table = Table(title=f"Sessions matching '{query}' (last {hours}h)")
+    table.add_column("Session ID", style="cyan")
+    table.add_column("Project", style="blue")
+    table.add_column("Matches", justify="right", style="green")
+    table.add_column("Modified", style="dim")
+    table.add_column("Sample Prompt", style="white", max_width=50)
+
+    for result in results:
+        project = Path(result["project_path"]).name if result["project_path"] else "unknown"
+        modified = result["modified_at"].strftime("%Y-%m-%d %H:%M")
+        sample = (result["sample_prompt"] or "")[:50]
+        if len(result["sample_prompt"] or "") > 50:
+            sample += "..."
+
+        table.add_row(
+            result["session_id"][:12] + "...",
+            project,
+            str(result["match_count"]),
+            modified,
+            sample,
+        )
+
+    console.print(table)
+    console.print(
+        f"\n[dim]Found {len(results)} session(s). "
+        f"Use 'claude --resume <session_id>' to continue a session.[/dim]"
+    )
+
+
+@main.command()
 @click.option("--port", "-p", default=8888, help="Port to run on")
 @click.option("--host", "-h", default="0.0.0.0", help="Host to bind to")
 def web(port: int, host: str):
@@ -300,6 +475,56 @@ def web(port: int, host: str):
     except ImportError:
         console.print("[red]Error: uvicorn not installed. Run: pip install uvicorn[/red]")
         sys.exit(1)
+
+
+@main.command()
+@click.argument("session_id", required=False)
+@click.option("--last", is_flag=True, help="Export the most recent session")
+@click.option("--output", "-o", type=click.Path(), help="Output file (default: stdout)")
+def export(session_id: str, last: bool, output: str):
+    """Export a session to markdown format.
+
+    Export session conversations to clean, readable markdown for backup or sharing.
+
+    Examples:
+
+        orchestra export abc123def --output session.md
+
+        orchestra export --last
+
+        orchestra export abc123def > session.md
+    """
+    manager = SessionManager()
+
+    # Determine which session to export
+    if last:
+        session = manager.get_most_recent()
+        if not session:
+            console.print("[red]No sessions found[/red]")
+            sys.exit(1)
+        target_id = session.session_id
+    elif session_id:
+        target_id = session_id
+    else:
+        console.print("[red]Please provide a session ID or use --last[/red]")
+        console.print("[dim]Use 'orchestra sessions' to list available sessions[/dim]")
+        sys.exit(1)
+
+    # Export to markdown
+    markdown = manager.export_to_markdown(target_id)
+
+    if not markdown:
+        console.print(f"[red]Session not found: {target_id}[/red]")
+        sys.exit(1)
+
+    # Output
+    if output:
+        output_path = Path(output)
+        output_path.write_text(markdown)
+        console.print(f"[green]Exported to {output_path}[/green]")
+    else:
+        # Write to stdout (bypass rich console for clean output)
+        print(markdown)
 
 
 if __name__ == "__main__":

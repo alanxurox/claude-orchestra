@@ -225,6 +225,40 @@ async def dashboard():
         <div id="agents-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             <!-- Agent cards will be inserted here -->
         </div>
+
+        <!-- Recent Sessions -->
+        <div class="mt-8">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-xl font-bold">Recent Sessions</h2>
+                <button onclick="loadSessions()" class="text-gray-400 hover:text-white text-sm">
+                    Refresh
+                </button>
+            </div>
+            <div id="sessions-list" class="space-y-3">
+                <!-- Session cards will be inserted here -->
+                <div class="text-gray-500 text-center py-8">Loading sessions...</div>
+            </div>
+        </div>
+
+        <!-- Resume Command Modal -->
+        <div id="resume-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50 p-4">
+            <div class="bg-gray-800 rounded-lg p-6 max-w-lg w-full">
+                <h3 class="text-lg font-bold mb-4">Resume Session</h3>
+                <p class="text-gray-400 text-sm mb-3">Run this command in your terminal:</p>
+                <div class="bg-gray-900 rounded p-3 font-mono text-sm break-all mb-4">
+                    <code id="resume-command" class="text-green-400"></code>
+                </div>
+                <div class="flex gap-3">
+                    <button onclick="copyResumeCommand()" class="flex-1 bg-green-600 hover:bg-green-700 rounded px-4 py-2 font-bold">
+                        Copy Command
+                    </button>
+                    <button onclick="closeResumeModal()" class="flex-1 bg-gray-600 hover:bg-gray-700 rounded px-4 py-2">
+                        Close
+                    </button>
+                </div>
+                <p id="copy-feedback" class="text-green-400 text-sm mt-2 text-center hidden">Copied!</p>
+            </div>
+        </div>
     </div>
 
     <script>
@@ -306,6 +340,127 @@ async def dashboard():
 
         // Initial connection
         connectWebSocket();
+
+        // Sessions functionality
+        async function loadSessions() {
+            try {
+                const response = await fetch('/api/sessions?hours=24');
+                const sessions = await response.json();
+                renderSessions(sessions);
+            } catch (error) {
+                document.getElementById('sessions-list').innerHTML = `
+                    <div class="text-red-400 text-center py-8">Failed to load sessions</div>
+                `;
+            }
+        }
+
+        function renderSessions(sessions) {
+            const list = document.getElementById('sessions-list');
+
+            if (sessions.length === 0) {
+                list.innerHTML = `
+                    <div class="text-gray-500 text-center py-8">No recent sessions found</div>
+                `;
+                return;
+            }
+
+            list.innerHTML = sessions.map(session => {
+                const projectName = session.project_path ? session.project_path.split('/').pop() : 'Unknown Project';
+                const promptPreview = session.last_prompt
+                    ? (session.last_prompt.length > 80 ? session.last_prompt.slice(0, 80) + '...' : session.last_prompt)
+                    : 'No prompt';
+                const timeAgo = formatTimeAgo(new Date(session.modified_at));
+
+                return `
+                    <div class="bg-gray-800 rounded-lg p-4">
+                        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                            <div class="flex-1 min-w-0">
+                                <div class="flex items-center gap-2 mb-1">
+                                    <h3 class="font-bold truncate">${escapeHtml(projectName)}</h3>
+                                    <span class="text-xs text-gray-500 whitespace-nowrap">${timeAgo}</span>
+                                </div>
+                                <p class="text-sm text-gray-400 truncate mb-1" title="${escapeHtml(session.last_prompt || '')}">${escapeHtml(promptPreview)}</p>
+                                <div class="flex items-center gap-3 text-xs text-gray-500">
+                                    <span>${session.message_count} messages</span>
+                                    <span class="font-mono">${session.session_id.slice(0, 8)}...</span>
+                                </div>
+                            </div>
+                            <button onclick="showResumeModal('${session.session_id}', '${escapeHtml(projectName)}')"
+                                class="bg-green-600 hover:bg-green-700 rounded px-4 py-2 text-sm font-bold whitespace-nowrap">
+                                Resume
+                            </button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function formatTimeAgo(date) {
+            const seconds = Math.floor((new Date() - date) / 1000);
+            if (seconds < 60) return 'just now';
+            const minutes = Math.floor(seconds / 60);
+            if (minutes < 60) return `${minutes}m ago`;
+            const hours = Math.floor(minutes / 60);
+            if (hours < 24) return `${hours}h ago`;
+            const days = Math.floor(hours / 24);
+            return `${days}d ago`;
+        }
+
+        function escapeHtml(text) {
+            if (!text) return '';
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        function showResumeModal(sessionId, projectName) {
+            const command = `claude --resume ${sessionId}`;
+            document.getElementById('resume-command').textContent = command;
+            document.getElementById('resume-modal').classList.remove('hidden');
+            document.getElementById('resume-modal').classList.add('flex');
+            document.getElementById('copy-feedback').classList.add('hidden');
+        }
+
+        function closeResumeModal() {
+            document.getElementById('resume-modal').classList.add('hidden');
+            document.getElementById('resume-modal').classList.remove('flex');
+        }
+
+        async function copyResumeCommand() {
+            const command = document.getElementById('resume-command').textContent;
+            try {
+                await navigator.clipboard.writeText(command);
+                document.getElementById('copy-feedback').classList.remove('hidden');
+                setTimeout(() => {
+                    document.getElementById('copy-feedback').classList.add('hidden');
+                }, 2000);
+            } catch (err) {
+                // Fallback for older browsers
+                const textArea = document.createElement('textarea');
+                textArea.value = command;
+                document.body.appendChild(textArea);
+                textArea.select();
+                document.execCommand('copy');
+                document.body.removeChild(textArea);
+                document.getElementById('copy-feedback').classList.remove('hidden');
+                setTimeout(() => {
+                    document.getElementById('copy-feedback').classList.add('hidden');
+                }, 2000);
+            }
+        }
+
+        // Close modal on escape key
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') closeResumeModal();
+        });
+
+        // Close modal on backdrop click
+        document.getElementById('resume-modal').addEventListener('click', (e) => {
+            if (e.target.id === 'resume-modal') closeResumeModal();
+        });
+
+        // Load sessions on page load
+        loadSessions();
     </script>
 </body>
 </html>

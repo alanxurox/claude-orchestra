@@ -1,5 +1,51 @@
 # CLAUDE.md - Claude Orchestra
 
+## Strategic Direction
+
+**Positioning:** "The lightweight Claude orchestrator" - no Docker, no databases, just `pip install`.
+
+We operate in a competitive space with established players, but we've identified a clear gap: developers who want orchestration without the complexity. While others build enterprise-grade infrastructure, we build tools that just work.
+
+**Our bet:** Most developers don't need Kubernetes-level orchestration. They need to run a few Claude agents in parallel without spending an hour on setup.
+
+**Core principles:**
+- **Simplicity over features** - Every feature must justify its complexity cost
+- **Python-native** - No external dependencies beyond pip packages
+- **Mobile-first dashboard** - Check on your agents from your phone
+- **Zero config start** - Works out of the box, customize later
+
+---
+
+## Competitive Landscape
+
+The Claude orchestration space has matured rapidly:
+
+| Project | Stars | Approach |
+|---------|-------|----------|
+| claude-flow | ~11k | Full-featured, Docker-based infrastructure |
+| claude-squad | ~5.5k | Team-oriented, database-backed |
+| **claude-orchestra** | - | Lightweight, pip-only, session-aware |
+
+**Why we exist despite the competition:**
+
+1. **Session Discovery** - Our killer feature. We scan `~/.claude/projects/` to find and resume your existing Claude Code sessions. No other orchestrator does this. You can pick up exactly where you left off, or monitor sessions you started manually.
+
+2. **Zero Infrastructure** - No Docker. No Postgres. No Redis. No YAML files. Just `pip install claude-orchestra && orchestra web`.
+
+3. **Git-Native Isolation** - We use git worktrees for agent isolation. It's a pattern every developer already understands, and it creates natural PR boundaries.
+
+**Who should use alternatives:**
+- Need enterprise SSO/RBAC? Use claude-flow
+- Need persistent agent memory across restarts? Use claude-squad
+- Need to orchestrate 50+ agents? Use claude-flow
+
+**Who should use us:**
+- Want to run 2-5 agents on a project without setup hassle
+- Want to monitor/resume Claude Code sessions from mobile
+- Prefer understanding your tools over configuring them
+
+---
+
 ## Commands
 
 ```bash
@@ -14,16 +60,16 @@ orchestra web                # Launch web dashboard
 
 ## What This Is
 
-**Claude Orchestra** - Multi-agent orchestration tool for Claude Code with git worktree isolation.
+**Claude Orchestra** - The lightweight multi-agent orchestrator for Claude Code. No Docker, no databases, no complex setup. Just `pip install` and go.
 
-**Core insight:** Parallel AI agents need isolated working directories to avoid conflicts. Git worktrees provide this isolation naturally.
+**Core insight:** Most developers don't need enterprise orchestration. They need to run a few Claude agents in parallel without fighting infrastructure.
 
-**Key features:**
-- Session discovery - Find and resume recent Claude Code sessions
-- Worktree isolation - Each agent works in separate git worktree
-- Parallel execution - Run multiple agents on different tasks simultaneously
-- Web dashboard - Mobile-friendly real-time monitoring
-- Permission bypass - Configure auto-approve for autonomous operation
+**What makes us different:**
+- **Session discovery (our killer feature)** - Scan `~/.claude/projects/` to find, monitor, and resume any Claude Code session. Start a session manually, check on it from your phone later.
+- **Worktree isolation** - Each agent works in a separate git worktree. No file conflicts, natural PR boundaries.
+- **Zero dependencies** - Pure Python, pip-installable, works immediately.
+- **Mobile-first dashboard** - Real-time monitoring designed for phones first, desktops second.
+- **Permission bypass** - Configure auto-approve for autonomous operation when you trust the task.
 
 ---
 

@@ -1,85 +1,114 @@
-# Claude Orchestra: 0-1 Story
+# Claude Orchestra: The Lightweight Alternative
 
-## The Problem (Why)
-**Developers using Claude Code hit a wall**: You can't run multiple AI agents on the same codebase without them stepping on each other's toes. Files conflict. Branches collide. Chaos ensues.
+## The Landscape
 
-**The pain**: Want 3 agents working in parallel on auth, tests, and performance? Too bad - they'll overwrite each other's changes.
+Let's be honest: **Claude Code orchestration is a crowded space**. Tools like claude-flow (11k+ stars), claude-squad (5k+ stars), ccswarm, and even AWS's official CLI Agent Orchestrator already exist. They're battle-tested. They work.
 
-## The Insight (Aha!)
-**Git worktrees already solve this** - they're a native git feature that creates isolated working directories. Each agent gets its own sandbox. Zero conflicts. Clean merges via PR.
+So why does Claude Orchestra exist?
 
-Nobody had built this for Claude Code yet.
+## The Problem We Solve
 
-## The Solution (What)
-**Claude Orchestra** = Multi-agent orchestration for Claude Code with git worktree isolation.
+After trying the existing tools, we found a common pattern:
+
+- **claude-flow**: Enterprise-grade, 64-agent support, but requires FalkorDB and complex setup
+- **claude-squad**: Production-ready Go binary, but opaque if you need to customize
+- **ccswarm**: Rust-native, fast, but requires Rust toolchain knowledge
+
+These are excellent tools for teams with DevOps support. But what about the solo developer who just wants to:
+1. See their recent Claude sessions in one place
+2. Spin up 2-3 parallel agents without reading 50 pages of docs
+3. Watch progress from their phone while grabbing coffee
+
+## Our Actual Differentiators
+
+### 1. Session Discovery (Our Killer Feature)
+
+```bash
+orchestra sessions --hours 24
+```
+
+This scans `~/.claude/projects/` to find and display your recent Claude Code sessions. No other tool does this. Resume any session instantly. Never lose context again.
+
+### 2. Zero-Dependency Simplicity
 
 ```bash
 pip install claude-orchestra
-orchestra spawn "build auth API" "write tests" "optimize queries"
-orchestra web  # Real-time dashboard
+orchestra spawn "build auth" "write tests"
 ```
 
-**3 agents. 3 isolated worktrees. 3x velocity.**
+That's it. No Docker. No databases. No config files. Just Python and git.
 
-## The Build (How)
-| Week | Milestone |
-|------|-----------|
-| Day 1-2 | Core architecture: session discovery, worktree manager |
-| Day 3-4 | CLI with 8 commands, state persistence |
-| Day 5-6 | FastAPI dashboard with WebSocket updates |
-| Day 7 | Documentation, CI/CD, PyPI setup |
+### 3. Lightweight by Design
+
+- **1,800 lines** of clean Python (vs. 10k+ in enterprise alternatives)
+- **Pure Python** - modify it, extend it, understand it
+- **Mobile-friendly dashboard** - check agent status from anywhere
+
+### 4. Python-Native
+
+If your stack is Python, Orchestra fits naturally. No Go binaries, no Rust compilation, no Node.js runtime. Just `pip install` and go.
+
+## What We Use
+
+Like other tools in this space, we use **git worktrees** for agent isolation. This isn't unique - ccswarm and claude-squad use them too. It's simply the right solution: each agent gets an isolated working directory, no file conflicts, clean PR-based merges.
+
+## When to Choose Orchestra
+
+| Choose Orchestra if... | Choose Alternatives if... |
+|------------------------|---------------------------|
+| You want `pip install` simplicity | You need 10+ parallel agents |
+| You want to see/resume recent sessions | You need enterprise auth & audit |
+| You prefer readable Python code | You need maximum performance |
+| You're a solo dev or small team | You have dedicated DevOps |
+| You want a mobile-friendly dashboard | You need CLI-only operation |
+
+## The Build
+
+| Phase | What |
+|-------|------|
+| Core | Session discovery from ~/.claude/projects/ |
+| CLI | 8 commands, Click-based, zero-config |
+| Dashboard | FastAPI + WebSockets, mobile-responsive |
+| Isolation | Git worktree management, auto-cleanup |
 
 **Stack**: Python 3.10+, Click, FastAPI, Rich, Git
 
-## The Launch (When)
-**Today.** January 2025.
+## Quick Start
 
-- GitHub: https://github.com/alanxurox/claude-orchestra
-- PyPI: `pip install claude-orchestra`
-- Announcements: Discord, Twitter, HackerNews
+```bash
+# Install
+pip install claude-orchestra
 
-## The Market (Who)
-| Segment | Size | Message |
-|---------|------|---------|
-| Claude Code users | 50K+ | "Finally, parallel agents without conflicts" |
-| AI-first developers | 500K+ | "3x your coding velocity" |
-| Open source maintainers | 100K+ | "Automate bug fix sprints" |
+# See your recent sessions (the feature nobody else has)
+orchestra sessions
 
-## The Competition (vs.)
-| Tool | Gap Orchestra Fills |
-|------|---------------------|
-| ccswarm (Go) | Python-native, has dashboard |
-| claude-flow | Claude Code specific, simpler |
-| Manual branching | Automated, visual, stateful |
+# Spawn parallel agents
+orchestra spawn "implement auth" "write tests" "optimize queries"
 
-## The Moat
-1. **First mover** in Claude Code orchestration space
-2. **Elegant solution** (git worktrees, not hacks)
-3. **Developer UX** (dashboard, CLI, examples)
-4. **Community** (MIT license, welcoming docs)
+# Watch from anywhere
+orchestra web  # Opens mobile-friendly dashboard
+```
 
-## The Metrics (Goals)
+## The Vision
 
-| Timeframe | Stars | Downloads | Signal |
-|-----------|-------|-----------|--------|
-| Week 1 | 50 | 50 | Early adopters |
-| Month 1 | 200 | 500 | Product-market fit |
-| Month 3 | 500 | 2,000 | Community traction |
+We're not trying to be the most powerful orchestrator. We're trying to be the **most accessible** one.
 
-## The Vision (Where)
-- **v0.1** → Works (today)
-- **v0.2** → Agent communication, result aggregation
-- **v1.0** → Industry standard for Claude Code orchestration
-- **Beyond** → Multi-model support, enterprise features
+- **v0.1** - Works today: spawn, status, sessions, dashboard
+- **v0.2** - Result aggregation, agent communication
+- **v1.0** - The go-to lightweight orchestrator for Python developers
 
 ## One-Liner
-> "Orchestra lets you run multiple Claude Code agents in parallel without conflicts - using git worktrees for isolation and a real-time dashboard for visibility."
 
-## The Ask
-1. **Try it**: `pip install claude-orchestra`
-2. **Star it**: https://github.com/alanxurox/claude-orchestra
-3. **Share it**: Tell other Claude Code users
+> "Claude Orchestra is the lightweight, pip-installable alternative for developers who want multi-agent orchestration without the enterprise complexity - plus the only tool that discovers and resumes your existing Claude sessions."
+
+## Try It
+
+```bash
+pip install claude-orchestra
+orchestra sessions  # See what you've been working on
+orchestra spawn "your first parallel task"
+```
 
 ---
 
-**TL;DR**: Parallel AI agents need isolation. Git worktrees provide it. Orchestra orchestrates it. Ship faster.
+**TL;DR**: In a market with powerful enterprise orchestrators, we chose simplicity. Session discovery you can't get elsewhere. Zero-config setup. 1,800 lines you can actually read. For developers who want parallel Claude agents without the overhead.

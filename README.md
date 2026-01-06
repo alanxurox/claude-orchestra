@@ -1,8 +1,9 @@
 # Claude Orchestra
 
-[![PyPI version](https://badge.fury.io/py/claude-orchestra.svg)](https://badge.fury.io/py/claude-orchestra)
 [![Tests](https://github.com/alanxurox/claude-orchestra/actions/workflows/tests.yml/badge.svg)](https://github.com/alanxurox/claude-orchestra/actions/workflows/tests.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+
+**The lightweight Claude orchestrator.** No Docker, no databases, no complex setup. Just `pip install` and go.
 
 Multi-agent orchestration for Claude Code with git worktree isolation.
 
@@ -13,6 +14,23 @@ Multi-agent orchestration for Claude Code with git worktree isolation.
 - **Parallel Execution** - Run multiple agents simultaneously
 - **Web Dashboard** - Mobile-friendly real-time monitoring
 - **Permission Bypass** - Configure auto-approve for autonomous operation
+
+## Why Claude Orchestra?
+
+The Claude orchestration space has matured with powerful tools like claude-flow and claude-squad. So why build another one?
+
+**Because most developers don't need enterprise infrastructure.** They need to run a few Claude agents in parallel without spending an hour on setup.
+
+| What you get | What you don't need |
+|--------------|---------------------|
+| No Docker required | Container orchestration |
+| No external databases | Redis/Postgres setup |
+| Just `pip install claude-orchestra` | YAML configuration files |
+| Session discovery (find and resume your Claude sessions) | Manual session tracking |
+| Mobile-friendly dashboard | Desktop-only interfaces |
+| ~1.8k lines of readable Python | Complex abstractions |
+
+**Our bet:** If you want to run 2-5 agents on a weekend project, you shouldn't need to learn Kubernetes first.
 
 ## Installation
 
@@ -157,9 +175,26 @@ ruff orchestra/
 
 ## Similar Projects
 
-- [ccswarm](https://github.com/nwiizo/ccswarm) - Claude Code + git worktree (Go)
-- [claude-flow](https://github.com/ruvnet/claude-flow) - Multi-agent orchestration platform
-- [swarms](https://github.com/kyegomez/swarms) - Enterprise multi-agent framework
+We're honest about the competition. These projects are excellent, and you should consider them:
+
+| Project | Stars | Best For |
+|---------|-------|----------|
+| [claude-flow](https://github.com/ruvnet/claude-flow) | ~11k | Enterprise-grade orchestration. Docker-based infrastructure with databases, queues, and advanced features. Choose this if you need SSO/RBAC, persistent memory, or are orchestrating 50+ agents. |
+| [claude-squad](https://github.com/smtg-ai/claude-squad) | ~5.5k | Team-oriented workflows. Go-based with multi-tool support and database backing. Great for teams needing shared agent state across restarts. |
+| [ccswarm](https://github.com/nwiizo/ccswarm) | - | Rust-native, high-performance. If you need maximum throughput and are comfortable with Rust tooling. |
+| [Auto-Claude](https://github.com/anthropics/anthropic-cookbook) | - | Built on Claude Agent SDK. Strong QA loops and testing workflows. |
+
+**When to choose claude-orchestra:**
+- You want to run 2-5 agents without infrastructure setup
+- You want to discover/resume Claude Code sessions from mobile
+- You prefer ~1.8k lines of readable Python you can understand and modify
+- You don't want to install Docker or configure databases
+
+**When to choose alternatives:**
+- You need enterprise SSO/RBAC (use claude-flow)
+- You need persistent agent memory across restarts (use claude-squad)
+- You're orchestrating 50+ agents (use claude-flow)
+- You need maximum performance (use ccswarm)
 
 ## License
 
